@@ -1,0 +1,6 @@
+To download the FEI dataset and the corresponding extracted CNN feature representations, used in the Ensemble clustering hands-on, please use the following link:
+
+The representations are .h5 files (read using h5py)
+Each .h5 representation file contains:
+ - a "data" key (containing the features)
+ - a "labels" key (containing the corresponding ground truth)
