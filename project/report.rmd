@@ -1,0 +1,395 @@
+---
+classoption: a4paper, xcolor = usenames,dvipsnames
+geometry: margin=2.5cm
+output:
+  bookdown::pdf_document2:
+    papersize: a4
+    fig_caption: true
+    highlight: tango
+    keep_tex: false
+    number_sections: true
+    pandoc_args:
+      - "--listings"
+    toc_depth: 3
+    toc: false
+    latex_engine: lualatex
+    includes:
+      in_header: preamble.tex
+      before_body: cover.tex
+---
+
+```{r, chunk, include=F}
+knitr::read_chunk(here::here("project", "report.r"))
+```
+
+```{r init, include=F}
+
+```
+
+# Introduction
+
+```{r, read-data, include=F}
+
+```
+
+The data are loading profiles of the bike stations over one week, collected every hour, from the period Monday 2nd September - Sunday 7th September, 2014 (168 hours in total). The loading profile of a station, or simply loading, is defined as the ratio of number of available bikes divided by the number of bike docks. A loading of `1` means that the station is fully loaded, i.e. all bikes are available. A loading of `0` means that the station is empty, all bikes have been rent. Throughout the project, we want to detect clusters in the data, corresponding to common customer usages. And then, using this clustering for further predicting the loading profile.
+
+# Descriptive statistics
+
+```{r, first-stations, include=F, cache=T}
+
+```
+
+First of all, we plot the loading of some stations. We also note that if a graph does not have a label for $x$-axis and $y$-axis, $x$-axis will represent the hour while $y$-axis will be the loading profile. In addition, each break on the $x$-axis is corresponding the beginning of a day in our datatset, i.e 0h of Mondays, Tuesday, etc.
+
+We see that all plots have some mountain shapes that peak in a certain range of time, more specifically they are high from night until the morning of the following day.
+
+```{r, plot-first-stations, echo=F, fig.cap="Loading profile of some stations", cache=T}
+g_first_stations
+```
+
+To have a clearer view regarding all stations, a boxplot of the loading from all stations in one specific hour is shown below.
+
+```{r, boxplot-df, include=F, cache=T}
+
+```
+
+```{r, plot-boxplot-df, echo=F, fig.cap="Boxplot of the loading from all stations in one specific hour", out.width="80%", cache=T}
+g_boxplot_df
+```
+
+In figure \@ref(fig:plot-boxplot-df), we see that the boxplots and their mean are all in the lower-end of the $y$-axis, which most of the time, the bicycles are being used. In addition, we see the pattern we talk previously. The loading is usually high at night, starts decreasing around 9h until 19h and then increasing again at night.
+
+Next, we take a closer look to the average hourly loading of each day in the week in the graph below.
+
+```{r, avg-hourly, include=F, cache=T}
+
+```
+
+```{r, plot-avg-hourly, echo=F, fig.cap="Average hourly loading of each day", out.width="80%", cache=T}
+g_avg_hourly
+```
+
+We note that there are 2 special properties:
+
+- Firstly, there is a significant difference between weekdays and weekend. In the weekdays, the loading is low around 9h and 19h, that is when we need to go to work or return home. On the opposite hand, the loading of the weekend is decreasing only at the evening which could be explained by the fact that they are not working days for most people.
+
+- Secondly, there is a difference between night and day. Generally, for both weekdays and weekend, the loading at night is higher than at day.
+
+Now, we want to see that if the position of a station has any impact on their loading profile.
+
+```{r, map-avg-hour, include=F, cache=T}
+
+```
+
+```{r, plot-map-avg-hour, echo=F, fig.cap="Average weekly loading of each station at 6h, 12h, 23h and all day", out.width="80%", cache=T}
+g_map_avg_hour
+```
+
+There is nothing in common between 3 plots here. In addition to the geographical location of each station, we also have access to another property of them which are whether the station is located on a hill or not. We show below the comparasion of the boxplots and the average hourly loading between hill and non-hill stations.
+
+```{r, boxplot-hill, include=F, cache=T}
+
+```
+
+```{r, plot-boxplot-hill, echo=F, fig.cap="Boxplot between hill and non-hill stations", out.width="80%", cache=T}
+g_boxplot_hill
+```
+
+We see a clearly different between the boxplots of these two type of stations. While non-hill stations boxplots remain stable and have somewhat similar pattern with the boxplots in figure \ref{fig:plot-boxplot-df}, the boxplots of the ones on hill has more notable properties:
+
+- There are a lot of outliers whose loading is high. It signifies that most hill stations loading is low, but there are still a few stations with high loading.
+- There is a difference between day and night, especially in the weekday. We see the same phenomena as in \ref{fig:plot-boxplot-df} but clearer.
+- There is also a notable difference between weekdays and weekend. The loading in weekend is relatively lower than that one in weekdays.
+
+```{r, avg-hill, include=F, cache=T}
+
+```
+
+```{r, plot-avg-hill, echo=F, fig.cap="Average hourly loading between hill and non-hill station", out.width="80%", cache=T}
+g_avg_hill
+```
+
+Same as boxplots, the average hourly loading also shows us similar things regarding the hill and non-hill stations.
+
+# Principal component analysis
+
+Since the number of dimensions of our dataset is well over 150, it is necessary to do a PCA before further analysis.
+
+```{r, pca, include=F}
+
+```
+
+```{r, pca-inertia-percent, include=F, cache=T}
+
+```
+
+```{r, pca-var, include=F, cache=T}
+
+```
+
+Below is the graph of the cumulative percentage of variance in some new components as the plot for variance. We see that the first `r pca_ncp` components has achieved $75\%$ of the total inertia. Furthermore, the arrows in the plot of variance are close enough to the border of the circle, which shows that the first two dimension has already contains a lot of information about the old dataset. We will now keep only `r pca_ncp` components and discard the other ones.
+
+```{r, pca-graph, include=F, cache=T}
+
+```
+
+```{r, plot-pca-graph, echo=F, fig.cap = "Cumulative percentage of variance and graph of variance on Dim 1 and Dim 2", out.width="80%", cache=T}
+g_pca
+```
+
+We now try to explain the new components based on the old components. Below is the graph of coefficients of the first `r pca_ncp` new components.
+
+```{r, pca-svd, include=F, cache=T}
+
+```
+
+```{r, plot-pca-svd, echo=F, fig.cap = "Coefficients of new components", out.width="80%", cache=T}
+g_pca_svd
+```
+
+- For the first components, we have a nearly straight line around $0.1$. As the new component is a linear combinasion of the old axes. We can interpret the first component as the the mean of one row multiply by $0.1$.
+
+- With the second, third and fourth components, we see the patterns that are mentioned in the first [section](#descriptive-statistics) are once again displayed here. The second and third lines form mountain shapes in weekdays and flatter in weekend. In additional, both two lines have the coefficients at day are generally postive while the ones at night are negative. For the fourth component, it is reversed but the coefficients in the weekday are still "shaper" than the ones in the weekend. We could say that these components represent the constrast of a specific range of time (second: afternoon, third: morning and fourth: night) and the rest of the day.
+
+- Since the fifth line does not have any special form, we can not interpret it here.
+
+# Clustering
+
+```{r, nbc, include=F}
+
+```
+
+In this section, we will use various clustering techniques on both original and reduced dataset and compare the result. To obtain the optimal number of clusters, we use a `R` packages called `NbClust` which provides 30 indices for determining the number of clusters and choose the best one by majority vote. After running that package, we choose the best number of clusters for hierarchical clustering is `r hc_k` and for kmeans, it is also `r km_k`.
+
+## Hierarchical clustering
+
+### Original data
+
+```{r, hc-raw, include=F}
+
+```
+
+```{r, hc-raw-height, include=F, cache=T}
+
+```
+
+```{r, hc-raw-dendro, include=F, cache=T}
+
+```
+
+```{r, hc-raw-graph, include=F, cache=T}
+
+```
+
+We will do a hierarchical clustering with the Ward critetion on the original data.
+
+```{r, plot-hc-raw-graph, echo=F, fig.cap="Heights versus number of classes of hclust and dendrogram on the original dataset", out.width="80%", cache=T}
+g_hc_raw
+```
+
+First, the height difference between the second branch and the third branch is the largest, so it is corresponding to the fact that `r hc_k` is the optimal number of clusters. In addition, if we use the simple linkage, we will end up with only one cluster.
+
+```{r, hc-raw-cpos, include=F, cache=T}
+
+```
+
+```{r, hc-raw-cmap, include=F, cache=T}
+
+```
+
+```{r, hc-raw-cgraph, include=F, cache=T}
+
+```
+
+```{r, plot-hc-raw-c, echo=F, fig.cap="Cluster on PCA and map of hierarchical clustering on the original data", out.width="80%", cache=T}
+g_hc_raw_c
+```
+
+For the cluster on PCA, we could divide into 2 zone based on Dim 2. The second cluster is belong to the postivie zone of Dim 2 and therefore have the loading in the afternoon higher than the rest of the day. In the negative zone of Dim 2, we divide again two more cluster, the first one will corresponce to the stations whose loading is above average and loading in the afternoon is lowest in the day. The third cluster contains stations which have the loading in the afternoon lower than the rest of the day as well as the average loading of it is less then the average of the whole dataset.
+
+The cluster on map also show the same information. We could compare it with figure \ref{fig:plot-map-avg-hour}. The map at 12h (afternoon) have similar pattern with the green cluster. Futhermore, in the map for all day average, we can see the blue cluster has its loading lower than the red one.
+
+### Reduced data
+
+```{r, hc-pca, include=F}
+
+```
+
+```{r, hc-pca-cpos, include=F, cache=T}
+
+```
+
+```{r, hc-pca-cmap, include=F, cache=T}
+
+```
+
+```{r, hc-pca-cgraph, include=F, cache=T}
+
+```
+
+```{r, plot-hc-pca-c, echo=F, fig.cap="Cluster on PCA and map of hierarchical clustering on the reduced data", out.width="80%", cache=T}
+g_hc_pca_c
+```
+
+```{r, hc-raw-pca-nmi, include=F}
+
+```
+
+To assure that clustering on the reduced data does not change the clustering result. We will calculate the normalized mutual information of two clusters. In our case, we have the NMI score is equal to `r paste0("$", round(hc_raw_pca_nmi * 100, 2), "\\%$")` which is not too high and we can see as well that although it still distribute around the same axes as before, the shape of the clusters has changed a little bit.
+
+## K-means clustering
+
+Next, we move forward to another clustering technique: K-means. We first do it on the original data.
+
+### Original data
+
+```{r, km-raw, include=F}
+
+```
+
+```{r, km-raw-cpos, include=F, cache=T}
+
+```
+
+```{r, km-raw-cmap, include=F, cache=T}
+
+```
+
+```{r, km-raw-cgraph, include=F, cache=T}
+
+```
+
+```{r, plot-km-raw-c, echo=F, fig.cap="Cluster on PCA and map of K-means clustering on the original data", out.width="80%", cache=T}
+g_km_raw_c
+```
+
+The figure above is nearly the same as figure \ref{fig:plot-hc-raw-c}. The most notable difference is the cluster size but it does not change the intepretation. We continue to cluster on the reduced data.
+
+### Reduced data
+
+```{r, km-pca, include=F}
+
+```
+
+```{r, km-pca-cmap, include=F, cache=T}
+
+```
+
+```{r, km-pca-cpos, include=F, cache=T}
+
+```
+
+```{r, km-pca-cgraph, include=F, cache=T}
+
+```
+
+```{r, plot-km-pca-c, echo=F, fig.cap="Cluster on PCA and map of K-means clustering on the reduced data", out.width="80%", cache=T}
+g_km_pca_c
+```
+
+```{r, km-raw-pca-nmi, include=F}
+
+```
+
+Same as before, we want to check the normalized mutual information of two clusters. In our case, we have the NMI score is equal to `r paste0("$", round(km_raw_pca_nmi * 100, 2), "\\%$")` which is high enough to conclure that clustering on the reduced data does not bring any significant change to the result.
+
+## Gaussian mixtures
+
+### Original data
+
+When running `mclust` on the original data, we obtain the best number of clusters are equal to 1. We have this error because there are too many dimensions and thus too many variables to estimate. It is more reasonable to use the `mclust` on the reduced data.
+
+### Reduced data
+
+```{r, mc, include=F}
+
+```
+
+```{r, mc-bic, include=F, cache=T}
+
+```
+
+```{r, mc-cpos, include=F, cache=T}
+
+```
+
+```{r, mc-graph, include=F, cache=T}
+
+```
+
+```{r, plot-mc-graph, echo=F, fig.cap="Graph of BIC and clusers on PCA of Gaussian mixtures", out.width="80%", cache=T}
+g_mc_graph
+```
+
+# Multiple correspondence analysis
+
+## MCA
+
+We will then do a MCA with a new quanlitative data that we transform from our original data. The rule of that transformation will be:
+
+- First we define two interval, day which is from 6h to 19h, and the rest of the day is night (note that a day begins at 0h).
+- We then divide loading into three intervals: $[-\infty, \frac{1}{3}[; [\frac{1}{3}, \frac{2}{3}[; [\frac{2}{3}, \infty[$ and assign it to a, b, c respectively.
+- Finally, we assign a number to each weekday starting from Monday and construct new columns.
+
+Below is how the new dataset looks like:
+
+```{r, df-mca, include=F}
+
+```
+
+```{r, df-mca-table, echo=F, cache=T}
+
+```
+
+After running MCA, we have below two graph of individuals.
+
+```{r, mca, include=F}
+
+```
+
+```{r, mca-ind, include=F, cache=T}
+
+```
+
+```{r, mca-ind-hill, include=F, cache=T}
+
+```
+
+```{r, plot-mca-ind-graph, echo=F, fig.cap="First graph of individuals of MCA", out.width="80%", cache=T}
+g_mca_ind
+```
+
+```{r, plot-mca-ind-hill-graph, echo=F, fig.cap="Second graph of individuals of MCA", out.width="80%", cache=T}
+g_mca_ind_hill
+```
+
+We notice that along the first dimensions, there are three separable groups. On the positive side, we have the c-class loading. The b-class loading are closer to 0 and all the a-class loading are on the negative zone of Dim 1. We can say that the dimension 1 could be explained by the loading profile at each station.
+
+## K-means clustering
+
+With the help of the package `NbClust`, we obtain the best number of clusters is `r km_k`.
+
+```{r, km-mca, include=F}
+
+```
+
+```{r, km-mca-cmap, include=F, cache=T}
+
+```
+
+```{r, km-mca-cpos, include=F, cache=T}
+
+```
+
+```{r, km-mca-cgraph, include=F, cache=T}
+
+```
+
+```{r, plot-km-mca-c, echo=F, fig.cap="Cluster on MCA and map of K-means clustering on the reduced data of MCA", out.width="80%", cache=T}
+g_km_mca_c
+```
+
+On the MCA coordinates, the clusters are distributed across the new first dimension from the right to left. We could say that our stations are first clustered by their loading class.
+
+# Conclusion
